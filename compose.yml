@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  nerfstudio:
+    shm_size: '12gb'
+    image: nerfstudio:latest
+    build:
+      context: 'https://github.com/nerfstudio-project/nerfstudio.git#main'
+      dockerfile: ./Dockerfile
+      args:
+        - CUDA_VERSION=11.8.0
+        - CUDA_ARCHITECTURES=75
+        - OS_VERSION=22.04
+        - TAG=nerfstudio-86
+    stdin_open: true
+    tty: true
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics
+      # DISPLAY: $DISPLAY
+    ports:
+      - "7007:7007"
+    volumes:
+      - ../:/workspace/
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # mount a docker volume to the container at /nerf-session and set the owner as 1000:1000
+      - nerf-sessions:/nerf-sessions  # this is the volume that will be mounted to the container
+    working_dir: /workspace/
+    command: /bin/bash
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+#make the volume if it doesn't exist
+volumes:
+  nerf-sessions:
+    name: nerf-sessions
